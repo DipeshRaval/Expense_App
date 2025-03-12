@@ -1,39 +1,65 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
+import React from 'react';
 import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
+import { ThemeProvider } from '../context/ThemeContext';
+import { ModalProvider } from '../context/ModalContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { useColorScheme, Platform } from 'react-native';
+import { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+// Custom animation configurations
+const tabScreenOptions: NativeStackNavigationOptions = {
+  headerShown: false,
+  animation: Platform.select({
+    ios: 'simple_push',
+    android: 'fade_from_bottom',
+  }),
+  animationDuration: 70,
+  contentStyle: {
+    backgroundColor: 'transparent',
+  },
+};
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+const modalScreenOptions: NativeStackNavigationOptions = {
+  headerShown: false,
+  animation: 'slide_from_bottom',
+  animationDuration: 200,
+  contentStyle: {
+    backgroundColor: 'transparent',
+  },
+};
 
-export default function RootLayout() {
+function RootLayoutContent() {
   const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
-
+  
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        <ModalProvider>
+          <Stack>
+            <Stack.Screen 
+              name="index"
+              options={tabScreenOptions}
+            />
+            <Stack.Screen 
+              name="activity"
+              options={tabScreenOptions}
+            />
+            <Stack.Screen 
+              name="calendar"
+              options={tabScreenOptions}
+            />
+            <Stack.Screen 
+              name="cards"
+              options={tabScreenOptions}
+            />
+          </Stack>
+        </ModalProvider>
+      </SafeAreaProvider>
     </ThemeProvider>
   );
 }
+
+// Use memo to prevent unnecessary re-renders
+export default React.memo(RootLayoutContent);
