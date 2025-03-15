@@ -1,17 +1,26 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, Dimensions, PanResponder, Animated } from 'react-native';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-import { ThemedView } from '../components/ThemedView';
-import { ThemedText } from '../components/ThemedText';
-import TransactionItem from '../components/expense-tracker/TransactionItem';
-import BottomNavigation from '../components/expense-tracker/BottomNavigation';
-import AddExpenseModal from '../components/expense-tracker/AddExpenseModal';
-import { useTheme } from '../context/ThemeContext';
-import { themeColors } from '../constants/theme';
-import Header from '../components/ui/Header';
-import ScreenContainer from '../components/ui/ScreenContainer';
-import ScreenTransition from '../components/ui/ScreenTransition';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+  Dimensions,
+  PanResponder,
+  GestureResponderEvent,
+  PanResponderGestureState,
+} from "react-native";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { ThemedView } from "../components/ThemedView";
+import { ThemedText } from "../components/ThemedText";
+import TransactionItem from "../components/expense-tracker/TransactionItem";
+import BottomNavigation from "../components/expense-tracker/BottomNavigation";
+import AddExpenseModal from "../components/expense-tracker/AddExpenseModal";
+import { useTheme } from "../context/ThemeContext";
+import { themeColors } from "../constants/theme";
+import Header from "../components/ui/Header";
+import ScreenContainer from "../components/ui/ScreenContainer";
+import ScreenTransition from "../components/ui/ScreenTransition";
 
 // Define transaction type
 interface Transaction {
@@ -20,7 +29,7 @@ interface Transaction {
   amount: number;
   category: string;
   date: string;
-  type: 'expense' | 'income';
+  type: "expense" | "income";
 }
 
 // Define day type
@@ -33,20 +42,55 @@ interface CalendarDay {
 
 // Sample data
 const transactions: Record<string, Transaction[]> = {
-  '2023-03-01': [
-    { id: 5, title: 'Freelance Work', amount: 350, category: 'Income', date: 'Mar 1', type: 'income' },
+  "2023-03-01": [
+    {
+      id: 5,
+      title: "Freelance Work",
+      amount: 350,
+      category: "Income",
+      date: "Mar 1",
+      type: "income",
+    },
   ],
-  '2023-03-02': [
-    { id: 4, title: 'Gas Station', amount: 35.40, category: 'Transport', date: 'Mar 2', type: 'expense' },
+  "2023-03-02": [
+    {
+      id: 4,
+      title: "Gas Station",
+      amount: 35.4,
+      category: "Transport",
+      date: "Mar 2",
+      type: "expense",
+    },
   ],
-  '2023-03-03': [
-    { id: 3, title: 'Netflix Subscription', amount: 12.99, category: 'Entertainment', date: 'Mar 3', type: 'expense' },
+  "2023-03-03": [
+    {
+      id: 3,
+      title: "Netflix Subscription",
+      amount: 12.99,
+      category: "Entertainment",
+      date: "Mar 3",
+      type: "expense",
+    },
   ],
-  '2023-03-05': [
-    { id: 2, title: 'Salary Deposit', amount: 2500, category: 'Income', date: 'Mar 5', type: 'income' },
+  "2023-03-05": [
+    {
+      id: 2,
+      title: "Salary Deposit",
+      amount: 2500,
+      category: "Income",
+      date: "Mar 5",
+      type: "income",
+    },
   ],
-  '2023-03-06': [
-    { id: 1, title: 'Grocery Shopping', amount: 45.99, category: 'Food', date: 'Mar 6', type: 'expense' },
+  "2023-03-06": [
+    {
+      id: 1,
+      title: "Grocery Shopping",
+      amount: 45.99,
+      category: "Food",
+      date: "Mar 6",
+      type: "expense",
+    },
   ],
 };
 
@@ -55,271 +99,307 @@ const generateDaysForMonth = (year: number, month: number): CalendarDay[] => {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const today = new Date();
-  const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+  const isCurrentMonth =
+    today.getMonth() === month && today.getFullYear() === year;
   const currentDay = today.getDate();
-  
+
   const days: CalendarDay[] = [];
   // Add empty spaces for days before the 1st of the month
   for (let i = 0; i < firstDayOfMonth; i++) {
-    days.push({ day: '', date: '', hasTransactions: false });
+    days.push({ day: "", date: "", hasTransactions: false });
   }
-  
+
   // Add days of the month
   for (let i = 1; i <= daysInMonth; i++) {
-    const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+    const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+      i
+    ).padStart(2, "0")}`;
     days.push({
       day: i,
       date,
       hasTransactions: transactions[date] ? true : false,
-      isToday: isCurrentMonth && i === currentDay
+      isToday: isCurrentMonth && i === currentDay,
     });
   }
-  
+
   return days;
 };
 
 // Get month name
 const getMonthName = (month: number): string => {
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
   return months[month];
 };
 
 export default function CalendarScreen() {
   const { isDark } = useTheme();
-  const theme = themeColors[isDark ? 'dark' : 'light'];
+  const theme = themeColors[isDark ? "dark" : "light"];
   const router = useRouter();
   const [showAddExpense, setShowAddExpense] = useState(false);
-  
-  // Set initial date to April 2025
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 3, 1)); // April is month 3 (0-indexed)
-  const [selectedDate, setSelectedDate] = useState('2025-04-15'); // Default selected date in April 2025
-  
-  // Animation values for month transitions
-  const position = useRef(new Animated.Value(0)).current;
   const [isTransitioning, setIsTransitioning] = useState(false);
-  
+
+  // Use useRef to track the current date to avoid stale closures
+  const currentDateRef = useRef(new Date());
+
+  // Set initial date to current date
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
+
+  // Track the selected day number
+  const [selectedDayNumber, setSelectedDayNumber] = useState<number>(
+    new Date().getDate()
+  );
+
+  // Update the ref whenever the state changes
+  useEffect(() => {
+    currentDateRef.current = currentDate;
+  }, [currentDate]);
+
+  // Update selectedDayNumber when selectedDate changes
+  useEffect(() => {
+    const dayNumber = parseInt(selectedDate.split("-")[2]);
+    setSelectedDayNumber(dayNumber);
+  }, [selectedDate]);
+
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const days = generateDaysForMonth(year, month);
 
-  const goToPreviousMonth = () => {
+  const goToMonth = (direction: number) => {
     if (isTransitioning) return;
-    
+
     setIsTransitioning(true);
-    // Start animation from 0 to 100% of screen width (moving right)
-    Animated.timing(position, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      // Reset position and update date
-      position.setValue(0);
-      setCurrentDate(new Date(year, month - 1, 1));
+
+    // Use the ref to get the most up-to-date value
+    const newDate = new Date(currentDateRef.current);
+    newDate.setMonth(newDate.getMonth() + direction);
+
+    console.log("Moving from", currentDateRef.current, "to", newDate);
+
+    // Update both the state and the ref
+    setCurrentDate(newDate);
+    currentDateRef.current = newDate;
+
+    setTimeout(() => {
       setIsTransitioning(false);
-    });
+    }, 300);
   };
-  
-  const goToNextMonth = () => {
-    if (isTransitioning) return;
-    
-    setIsTransitioning(true);
-    // Start animation from 0 to -100% of screen width (moving left)
-    Animated.timing(position, {
-      toValue: -1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      // Reset position and update date
-      position.setValue(0);
-      setCurrentDate(new Date(year, month + 1, 1));
-      setIsTransitioning(false);
-    });
-  };
-  
-  // Create pan responder for horizontal swipes
+
+  // Create pan responder for swipe gestures
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, gestureState) => {
         // Only respond to horizontal gestures
-        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy * 3) && 
-               Math.abs(gestureState.dx) > 10;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        // Calculate position as a fraction of screen width
-        position.setValue(gestureState.dx / SCREEN_WIDTH);
+        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy * 2);
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (isTransitioning) return;
-        
-        const threshold = 0.2; // 20% of screen width
-        
-        if (gestureState.dx > SCREEN_WIDTH * threshold) {
+        const SWIPE_THRESHOLD = 50; // Minimum distance for swipe
+
+        if (gestureState.dx > SWIPE_THRESHOLD) {
           // Swipe right - go to previous month
-          goToPreviousMonth();
-        } else if (gestureState.dx < -SCREEN_WIDTH * threshold) {
+          console.log("goToPreviousMonth");
+          goToMonth(-1);
+        } else if (gestureState.dx < -SWIPE_THRESHOLD) {
           // Swipe left - go to next month
-          goToNextMonth();
-        } else {
-          // Not enough distance, snap back
-          Animated.spring(position, {
-            toValue: 0,
-            friction: 5,
-            tension: 40,
-            useNativeDriver: true,
-          }).start();
+          console.log("goToNextMonth");
+          goToMonth(1);
         }
       },
     })
   ).current;
-  
+
   // Handle tab navigation
   const handleTabChange = (tab: string) => {
-    if (tab === 'dashboard') {
-      router.push('/');
-    } else if (tab !== 'calendar') {
-      router.push(tab === 'activity' ? '/activity' : '/cards');
+    if (tab === "dashboard") {
+      router.push("/");
+    } else if (tab !== "calendar") {
+      router.push(tab === "activity" ? "/activity" : "/cards");
     }
   };
-  
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  
-  // Calculate transform based on position
-  const translateX = position.interpolate({
-    inputRange: [-1, 0, 1],
-    outputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
-  });
-  
+
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
   return (
     <ScreenTransition>
-      <ThemedView style={[styles.container, { backgroundColor: theme.background }]}>
-        <Header
-          title="Calendar"
-        />
-        
+      <ThemedView
+        style={[styles.container, { backgroundColor: theme.background }]}
+      >
+        <Header title="Calendar" />
+
         {/* Month Navigation */}
-        <View style={[styles.monthNav, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-          <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
+        <View
+          style={[
+            styles.monthNav,
+            { backgroundColor: theme.surface, borderBottomColor: theme.border },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => goToMonth(-1)}
+            style={styles.navButton}
+          >
             <ChevronLeft size={24} color={theme.textSecondary} />
           </TouchableOpacity>
           <ThemedText style={[styles.monthTitle, { color: theme.text }]}>
             {getMonthName(month)} {year}
           </ThemedText>
-          <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
+          <TouchableOpacity
+            onPress={() => goToMonth(1)}
+            style={styles.navButton}
+          >
             <ChevronRight size={24} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
-        
+
         <ScreenContainer>
-          {/* Calendar with swipe gesture */}
-          <Animated.View 
+          {/* Calendar with swipe gestures */}
+          <View
             {...panResponder.panHandlers}
             style={[
               styles.calendarContainer,
-              { 
-                backgroundColor: theme.background,
-                transform: [{ translateX }]
-              }
+              { backgroundColor: theme.surface },
             ]}
           >
             {/* Day names */}
             <View style={styles.dayNamesContainer}>
               {dayNames.map((name, index) => (
-                <ThemedText 
-                  key={index} 
-                  style={[
-                    styles.dayName, 
-                    { color: theme.textSecondary }
-                  ]}
+                <ThemedText
+                  key={index}
+                  style={[styles.dayName, { color: theme.textSecondary }]}
                 >
                   {name}
                 </ThemedText>
               ))}
             </View>
-            
+
             {/* Calendar grid */}
             <View style={styles.calendarGrid}>
               {days.map((day, index) => (
-                <TouchableOpacity 
+                <TouchableOpacity
                   key={index}
                   style={[
                     styles.dayCell,
-                    day.date === selectedDate && { 
+                    day.date === selectedDate && {
                       backgroundColor: theme.primary,
-                      borderRadius: 100,
+                      borderRadius: 8,
                     },
-                    day.isToday && day.date !== selectedDate && {
-                      backgroundColor: `${theme.primary}20`,
-                      borderRadius: 100,
-                    }
+                    day.isToday && {
+                      backgroundColor:
+                        day.date === selectedDate
+                          ? theme.primary
+                          : `${theme.primary}20`,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: theme.primary,
+                    },
+                    typeof day.day === "number" &&
+                      day.day === selectedDayNumber &&
+                      day.date !== selectedDate && {
+                        backgroundColor: `${theme.textSecondary}20`,
+                        borderRadius: 8,
+                      },
                   ]}
-                  onPress={() => day.date && setSelectedDate(day.date)}
+                  onPress={() => {
+                    if (day.date) {
+                      setSelectedDate(day.date);
+                      setSelectedDayNumber(
+                        typeof day.day === "number"
+                          ? day.day
+                          : new Date().getDate()
+                      );
+                    }
+                  }}
                   disabled={!day.date}
                 >
                   {day.day ? (
                     <>
-                      <ThemedText style={[
-                        styles.dayText,
-                        { 
-                          color: day.date === selectedDate 
-                            ? '#FFFFFF' 
-                            : day.isToday 
-                              ? theme.primary 
-                              : theme.text 
-                        },
-                        day.isToday && {
-                          fontWeight: '700'
-                        }
-                      ]}>
+                      <ThemedText
+                        style={[
+                          styles.dayText,
+                          {
+                            color:
+                              day.date === selectedDate
+                                ? "#FFFFFF"
+                                : day.isToday
+                                ? theme.primary
+                                : day.day === selectedDayNumber
+                                ? theme.textSecondary
+                                : theme.text,
+                            fontWeight:
+                              day.isToday || day.day === selectedDayNumber
+                                ? "700"
+                                : "500",
+                          },
+                        ]}
+                      >
                         {day.day}
                       </ThemedText>
                       {day.hasTransactions && (
-                        <View style={[
-                          styles.transactionDot,
-                          { 
-                            backgroundColor: day.date === selectedDate 
-                              ? '#FFFFFF' 
-                              : theme.primary
-                          }
-                        ]} />
+                        <View
+                          style={[
+                            styles.transactionDot,
+                            {
+                              backgroundColor:
+                                day.date === selectedDate
+                                  ? "#FFFFFF"
+                                  : theme.primary,
+                            },
+                          ]}
+                        />
                       )}
                     </>
                   ) : null}
                 </TouchableOpacity>
               ))}
             </View>
-          </Animated.View>
-          
+          </View>
+
           {/* Transactions for selected date */}
           <View style={styles.transactionsContainer}>
-            <ThemedText style={[styles.transactionsTitle, { color: theme.text }]}>
+            <ThemedText
+              style={[styles.transactionsTitle, { color: theme.text }]}
+            >
               Transactions
             </ThemedText>
-            
-            <View style={styles.transactionsList}>
-              {transactions[selectedDate] ? (
-                <ThemedView style={[
+
+            {transactions[selectedDate] ? (
+              <ThemedView
+                style={[
                   styles.transactionCard,
-                  { backgroundColor: theme.background }
-                ]}>
-                  {transactions[selectedDate].map((transaction: Transaction) => (
-                    <TransactionItem key={transaction.id} transaction={transaction} />
-                  ))}
-                </ThemedView>
-              ) : (
-                <ThemedView style={[
-                  styles.emptyState,
-                  { backgroundColor: theme.surface }
-                ]}>
-                  <ThemedText style={{ color: theme.textSecondary }}>
-                    No transactions for this date
-                  </ThemedText>
-                </ThemedView>
-              )}
-            </View>
+                  { backgroundColor: theme.surface },
+                ]}
+              >
+                {transactions[selectedDate].map((transaction: Transaction) => (
+                  <TransactionItem
+                    key={transaction.id}
+                    transaction={transaction}
+                  />
+                ))}
+              </ThemedView>
+            ) : (
+              <ThemedView
+                style={[styles.emptyState, { backgroundColor: theme.surface }]}
+              >
+                <ThemedText style={{ color: theme.textSecondary }}>
+                  No transactions for this date
+                </ThemedText>
+              </ThemedView>
+            )}
           </View>
         </ScreenContainer>
 
@@ -328,18 +408,14 @@ export default function CalendarScreen() {
         )}
 
         {/* Floating Action Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => setShowAddExpense(true)}
           style={[
             styles.floatingButton,
-            { 
-              backgroundColor: theme.primary,
-              bottom: 100
-            }
+            { backgroundColor: theme.primary, bottom: 100 },
           ]}
         >
-          <Plus size={22} color={theme.background} strokeWidth={2.5} />
-          <ThemedText style={styles.floatingButtonText}>Add Transaction</ThemedText>
+          <Plus size={24} color={theme.background} strokeWidth={2.5} />
         </TouchableOpacity>
 
         {/* Bottom Navigation */}
@@ -349,7 +425,7 @@ export default function CalendarScreen() {
   );
 }
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CONTENT_PADDING = SCREEN_WIDTH > 500 ? 24 : 16;
 const CARD_MARGIN = SCREEN_WIDTH > 500 ? 16 : 12;
 
@@ -358,47 +434,61 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   monthNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: CONTENT_PADDING,
     borderBottomWidth: 1,
+    marginBottom: 16,
   },
   navButton: {
     padding: 8,
   },
   monthTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   calendarContainer: {
-    paddingHorizontal: CONTENT_PADDING,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   dayNamesContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 4,
   },
   dayName: {
     flex: 1,
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   dayCell: {
-    width: `${100/7}%`,
+    width: `${100 / 7}%`,
     aspectRatio: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 2,
   },
   dayText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   transactionDot: {
     width: 4,
@@ -408,22 +498,18 @@ const styles = StyleSheet.create({
   },
   transactionsContainer: {
     flex: 1,
-    marginTop: 8,
   },
   transactionsTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  transactionsList: {
-    flex: 1,
+    fontWeight: "600",
+    marginBottom: 12,
   },
   transactionCard: {
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 8,
@@ -436,21 +522,20 @@ const styles = StyleSheet.create({
   emptyState: {
     padding: 20,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   floatingButton: {
-    position: 'absolute',
+    position: "absolute",
     right: CONTENT_PADDING,
-    width: 160,
-    height: 48,
+    width: 56,
+    height: 56,
     borderRadius: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.25,
         shadowRadius: 8,
@@ -460,10 +545,4 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  floatingButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-}); 
+});
